@@ -29,6 +29,10 @@
       {
         "command": "swiftUserscripts.showLog",
         "title": "Swift Userscripts: Show Log"
+      },
+      {
+        "command": "swiftUserscripts.installVswift",
+        "title": "Swift Userscripts: Install .vswift Bundle"
       }
     ],
     "configuration": {
@@ -38,6 +42,11 @@
           "type": "string",
           "default": "**/userscript.json",
           "description": "Glob used to discover userscript manifests in the workspace."
+        },
+        "swiftUserscripts.bundleGlob": {
+          "type": "string",
+          "default": "**/*.vswift",
+          "description": "Glob used to discover .vswift bundle archives in the workspace."
         },
         "swiftUserscripts.buildConfiguration": {
           "type": "string",

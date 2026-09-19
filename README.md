@@ -37,6 +37,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full options analysis.
 | `examples/copilot/` | Copilot-style AI commands (Generate/Explain/Refactor) over a configurable OpenAI-compatible endpoint |
 | `docs/` | Architecture & protocol docs |
 | `test/smoke.mjs` | End-to-end protocol test without VS Code |
+| `test/vswift.test.mjs` | `.vswift` bundle tests (pack, extract, defenses) |
+| `docs/VSWIFT.md` | `.vswift` bundle format spec |
 
 ## Quick start
 
@@ -83,6 +85,18 @@ try await vscode.start(
 ```
 
 The host watches `**/userscript.json`, builds with `swift build`, and hot-reloads.
+
+## `.vswift` bundles (no toolchain needed to *run* a script)
+
+Pack a compiled script into a shareable archive and load it directly:
+
+```sh
+cd swift-userscript && swift build --product vswift   # build the packager
+./.build/debug/vswift pack ../examples/hello --product HelloUserscript -o hello.vswift
+```
+
+Drop `hello.vswift` in the workspace (auto-discovered via `**/*.vswift`) or use
+**"Swift Userscripts: Install .vswift Bundle"**. Format spec: [docs/VSWIFT.md](docs/VSWIFT.md).
 
 ## Security model
 
