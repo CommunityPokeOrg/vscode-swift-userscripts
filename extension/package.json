@@ -2,7 +2,7 @@
   "name": "vscode-swift-userscripts",
   "displayName": "Swift Userscripts",
   "description": "Run VS Code extension features written in Swift via a JSON-RPC host bridge.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "communitypoke",
   "license": "MIT",
   "repository": {
