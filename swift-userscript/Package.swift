@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "swift-userscript",
+    platforms: [.macOS(.v13)],
     products: [
         .library(name: "SwiftUserscript", targets: ["SwiftUserscript"]),
         .library(name: "VSwift", targets: ["VSwift"]),

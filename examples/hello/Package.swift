@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "hello-userscript",
+    platforms: [.macOS(.v13)],
     dependencies: [
         .package(path: "../../swift-userscript"),
     ],
