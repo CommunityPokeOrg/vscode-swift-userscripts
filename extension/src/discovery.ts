@@ -56,6 +56,15 @@ function run(cmd: string, args: string[], cwd: string): Promise<void> {
   });
 }
 
+/** Find `*.vswift` bundle archives in the workspace (configured glob). */
+export async function findBundles(): Promise<string[]> {
+  const glob = vscode.workspace
+    .getConfiguration("swiftUserscripts")
+    .get<string>("bundleGlob", "**/*.vswift");
+  const files = await vscode.workspace.findFiles(glob, "**/node_modules/**");
+  return files.map((f) => f.fsPath);
+}
+
 /** `swift build` the package and return the produced executable's path. */
 export async function buildScript(
   manifest: UserscriptManifest,

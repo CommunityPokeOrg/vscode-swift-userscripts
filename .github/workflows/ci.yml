@@ -58,3 +58,23 @@ jobs:
           swift build --package-path examples/copilot
       - name: Protocol smoke test
         run: node test/smoke.mjs examples/hello/.build/debug/HelloUserscript examples/copilot/.build/debug/CopilotUserscript
+
+  vswift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build vswift tool and hello example
+        run: |
+          swift build --package-path swift-userscript
+          swift build --package-path examples/hello
+      - name: Compile extension
+        run: npm install && npm run compile
+        working-directory: extension
+      - name: .vswift bundle tests
+        run: node test/vswift.test.mjs

@@ -71,6 +71,9 @@ public actor JSONRPCPeer {
     private var pending: [Int: CheckedContinuation<JSONValue, Error>] = [:]
     private var requestHandlers: [String: RequestHandler] = [:]
     private var notificationHandlers: [String: NotificationHandler] = [:]
+    /// In-flight handler tasks, drained before `run()` returns so responses
+    /// are always flushed even when stdin closes immediately after a request.
+    private var inflight: [UUID: Task<Void, Never>] = [:]
 
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
@@ -119,6 +122,16 @@ public actor JSONRPCPeer {
                 )
             }
         }
+        await drainInflight()
+    }
+
+    /// Wait for any in-flight handler tasks to finish writing their responses.
+    private func drainInflight() async {
+        while !inflight.isEmpty {
+            for task in inflight.values {
+                await task.value
+            }
+        }
     }
 
     private func handleLine(_ data: Data) throws {
@@ -128,7 +141,9 @@ public actor JSONRPCPeer {
     private func handle(_ msg: IncomingMessage) {
         if let id = msg.id, let method = msg.method {
             let handler = requestHandlers[method]
-            Task {
+            let taskID = UUID()
+            inflight[taskID] = Task {
+                defer { self.inflight[taskID] = nil }
                 let response: OutgoingResponse
                 if let handler {
                     do {
