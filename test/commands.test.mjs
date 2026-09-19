@@ -3,7 +3,13 @@
 // the workspace AND installed). Runs against the compiled extension output.
 
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { CommandRegistry } from "../extension/out/commands.js";
+import { toPickItems } from "../extension/out/commandPalette.js";
+
+const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 let passed = 0;
 function ok(name, cond = true) {
@@ -72,5 +78,68 @@ reg.registerFor("a", "x", () => {});
 reg.unregisterId("x");
 reg.unregisterId("x");
 ok("unregisterId idempotent");
+
+// --- Command palette contributions (package.json) ---
+const pkg = JSON.parse(
+  fs.readFileSync(path.join(root, "extension/package.json"), "utf8"),
+);
+const contributed = pkg.contributes.commands.map((c) => c.command);
+ok(
+  "runCommand contributed",
+  contributed.includes("swiftUserscripts.runCommand"),
+);
+for (const id of ["swiftCopilot.generate", "swiftCopilot.explain", "swiftCopilot.refactor"]) {
+  const c = pkg.contributes.commands.find((x) => x.command === id);
+  ok(`${id} contributed with category`, c?.category === "Swift Copilot");
+}
+ok(
+  "copilot commands gated on swiftCopilot.loaded context",
+  pkg.contributes.menus?.commandPalette?.every(
+    (m) => !m.command.startsWith("swiftCopilot.") || m.when === "swiftCopilot.loaded",
+  ),
+);
+
+// --- registry list() metadata + QuickPick items ---
+const reg2 = new CommandRegistry(makeVscode().registerCommand);
+const vsc2 = makeVscode();
+const reg3 = new CommandRegistry(vsc2.registerCommand);
+reg3.registerFor("copilot-userscript@/bin/a", "swiftCopilot.generate", () => {});
+reg3.registerFor("copilot-userscript@/bin/a", "swiftCopilot.explain", () => {});
+reg3.registerFor("hello-userscript@/bin/b", "swiftHello.sayHello", () => {});
+const listed = reg3.list();
+ok("list() returns all live registrations", listed.length === 3);
+ok(
+  "list() exposes owner metadata",
+  listed.find((x) => x.id === "swiftCopilot.generate")?.owner ===
+    "copilot-userscript@/bin/a",
+);
+
+const items = toPickItems(reg3.list(), [
+  {
+    name: "copilot-userscript",
+    commands: [
+      { id: "swiftCopilot.generate", title: "Generate Code" },
+      { id: "swiftCopilot.explain", title: "Explain Selection" },
+    ],
+  },
+  { name: "hello-userscript", commands: [{ id: "swiftHello.sayHello", title: "Say Hello" }] },
+]);
+ok("pick items sorted by command id", items[0].commandId === "swiftCopilot.explain");
+ok(
+  "pick item shows manifest title + owner",
+  items[1].label === "Generate Code" &&
+    items[1].description === "swiftCopilot.generate" &&
+    items[1].detail === "from copilot-userscript",
+);
+// Cleanup removes entries from future listings.
+reg3.unregisterOwner("copilot-userscript@/bin/a");
+ok(
+  "cleanup shrinks list()",
+  reg3.list().length === 1 && reg3.list()[0].id === "swiftHello.sayHello",
+);
+ok(
+  "pick items after cleanup only list live commands",
+  toPickItems(reg3.list(), []).length === 1,
+);
 
 console.log(`commands: all ${passed} checks passed`);

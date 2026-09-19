@@ -31,6 +31,9 @@ export class SwiftScriptHost implements vscode.Disposable {
     return this.script.manifest.name;
   }
 
+  /** Command contributions reported by the script's initialize manifest. */
+  contributedCommands: { id: string; title: string }[] = [];
+
   /** Distinct owner key for command registrations (binary path is unique per load source). */
   private get ownerKey(): string {
     return `${this.script.manifest.name}@${this.script.binaryPath}`;
@@ -67,11 +70,12 @@ export class SwiftScriptHost implements vscode.Disposable {
       capabilities: { api: Object.keys(apiHandlers) },
     })) as unknown as ScriptManifest;
 
+    this.contributedCommands = result.contributes?.commands ?? [];
     // Clear any registrations this host may have left from a prior start()
     // (e.g. a start that threw partway through registration).
     this.commands.unregisterOwner(this.ownerKey);
     try {
-      for (const cmd of result.contributes?.commands ?? []) {
+      for (const cmd of this.contributedCommands) {
         this.output.appendLine(`[${this.name}] registering command ${cmd.id}`);
         this.commands.registerFor(this.ownerKey, cmd.id, async (...args) => {
           return await this.peer!.sendRequest("workspace/executeCommand", {
