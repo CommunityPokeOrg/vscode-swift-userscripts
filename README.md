@@ -108,6 +108,10 @@ like any executable you install. Hardening options (sandbox-exec on macOS,
 Linux namespaces, an opt-in API allowlist per script) are discussed in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Contributors
+
+- [WolfyBlair](https://github.com/WolfyBlair)
+
 ## Status
 
 Working scaffold: discovery → build → spawn → handshake → command registration
