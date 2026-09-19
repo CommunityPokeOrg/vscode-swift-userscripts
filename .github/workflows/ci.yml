@@ -32,6 +32,8 @@ jobs:
       - name: Typecheck extension
         run: npm install && npm run compile
         working-directory: extension
+      - name: Command registry tests
+        run: node test/commands.test.mjs
       - name: Package VSIX
         run: npm run package
         working-directory: extension
