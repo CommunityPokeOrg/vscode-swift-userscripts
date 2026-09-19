@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  swift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - name: Build kit and tests
+        run: swift test
+        working-directory: swift-userscript
+      - name: Build example userscript
+        run: swift build
+        working-directory: examples/hello
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Typecheck extension
+        run: npm install && npm run compile
+        working-directory: extension
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: [swift, extension]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build userscript
+        run: swift build
+        working-directory: examples/hello
+      - name: Protocol smoke test
+        run: node test/smoke.mjs
