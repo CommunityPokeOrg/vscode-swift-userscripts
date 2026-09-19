@@ -5,6 +5,7 @@
 import * as cp from "child_process";
 import * as vscode from "vscode";
 import { apiHandlers } from "./api";
+import { CommandRegistry } from "./commands";
 import { ResolvedScript } from "./discovery";
 import { Json, RpcPeer } from "./rpc";
 
@@ -19,15 +20,20 @@ interface ScriptManifest {
 export class SwiftScriptHost implements vscode.Disposable {
   private proc: cp.ChildProcess | undefined;
   private peer: RpcPeer | undefined;
-  private disposables: vscode.Disposable[] = [];
 
   constructor(
     private readonly script: ResolvedScript,
     private readonly output: vscode.OutputChannel,
+    private readonly commands: CommandRegistry,
   ) {}
 
   get name(): string {
     return this.script.manifest.name;
+  }
+
+  /** Distinct owner key for command registrations (binary path is unique per load source). */
+  private get ownerKey(): string {
+    return `${this.script.manifest.name}@${this.script.binaryPath}`;
   }
 
   async start(): Promise<void> {
@@ -61,22 +67,28 @@ export class SwiftScriptHost implements vscode.Disposable {
       capabilities: { api: Object.keys(apiHandlers) },
     })) as unknown as ScriptManifest;
 
-    for (const cmd of result.contributes?.commands ?? []) {
-      this.output.appendLine(`[${this.name}] registering command ${cmd.id}`);
-      this.disposables.push(
-        vscode.commands.registerCommand(cmd.id, async (...args) => {
+    // Clear any registrations this host may have left from a prior start()
+    // (e.g. a start that threw partway through registration).
+    this.commands.unregisterOwner(this.ownerKey);
+    try {
+      for (const cmd of result.contributes?.commands ?? []) {
+        this.output.appendLine(`[${this.name}] registering command ${cmd.id}`);
+        this.commands.registerFor(this.ownerKey, cmd.id, async (...args) => {
           return await this.peer!.sendRequest("workspace/executeCommand", {
             command: cmd.id,
             arguments: args as Json[],
           });
-        }),
-      );
+        });
+      }
+    } catch (e) {
+      // Don't leak partial registrations from a failed start.
+      this.commands.unregisterOwner(this.ownerKey);
+      throw e;
     }
   }
 
   dispose(): void {
-    for (const d of this.disposables) d.dispose();
-    this.disposables = [];
+    this.commands.unregisterOwner(this.ownerKey);
     try {
       this.peer?.sendNotification("shutdown");
     } catch {

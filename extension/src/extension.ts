@@ -2,12 +2,14 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { initApi } from "./api";
+import { CommandRegistry } from "./commands";
 import { buildScript, findBundles, findManifests } from "./discovery";
 import { SwiftScriptHost } from "./swiftHost";
 import { loadBundle } from "./vswift";
 
 let output: vscode.OutputChannel;
 let hosts: SwiftScriptHost[] = [];
+let commands: CommandRegistry;
 let loading = false;
 
 async function loadAll(context: vscode.ExtensionContext): Promise<void> {
@@ -24,7 +26,7 @@ async function loadAll(context: vscode.ExtensionContext): Promise<void> {
     for (const manifest of manifests) {
       try {
         const resolved = await buildScript(manifest, output);
-        const host = new SwiftScriptHost(resolved, output);
+        const host = new SwiftScriptHost(resolved, output, commands);
         await host.start();
         hosts.push(host);
         output.appendLine(`[host] started ${host.name}`);
@@ -42,11 +44,23 @@ async function loadAll(context: vscode.ExtensionContext): Promise<void> {
           .map((f) => path.join(installRoot, f))
       : [];
     const bundles = [...new Set([...(await findBundles()), ...installed])];
+    const seenBundles = new Set<string>();
     for (const bundlePath of bundles) {
       try {
         const loaded = loadBundle(bundlePath, bundleCache, (m) =>
           output.appendLine(`[vswift] ${m}`),
         );
+        // The same bundle can be discovered twice (e.g. sitting in the
+        // workspace AND installed). Skip duplicates so two hosts don't fight
+        // over the same contributed command ids.
+        const identity = `${loaded.manifest.name}@${loaded.manifest.version}`;
+        if (seenBundles.has(identity)) {
+          output.appendLine(
+            `[vswift] skipping duplicate bundle ${identity} (${bundlePath})`,
+          );
+          continue;
+        }
+        seenBundles.add(identity);
         const host = new SwiftScriptHost(
           {
             manifest: {
@@ -57,6 +71,7 @@ async function loadAll(context: vscode.ExtensionContext): Promise<void> {
             binaryPath: loaded.binaryPath,
           },
           output,
+          commands,
         );
         await host.start();
         hosts.push(host);
@@ -102,7 +117,8 @@ async function installBundle(context: vscode.ExtensionContext): Promise<void> {
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   output = vscode.window.createOutputChannel("Swift Userscripts");
-  context.subscriptions.push(output);
+  commands = new CommandRegistry(vscode.commands.registerCommand);
+  context.subscriptions.push(output, commands);
   initApi(context);
 
   context.subscriptions.push(
@@ -132,4 +148,5 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 export function deactivate(): void {
   for (const h of hosts) h.dispose();
   hosts = [];
+  commands?.dispose();
 }
