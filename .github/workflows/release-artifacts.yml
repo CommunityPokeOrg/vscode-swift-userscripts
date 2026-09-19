@@ -1,0 +1,48 @@
+name: Release artifacts
+
+# Builds the userscript example binaries on supported platforms so they can be
+# embedded into .vswift bundles. Trigger manually:
+#   gh workflow run release-artifacts.yml
+# then download artifacts via the Actions UI or:
+#   gh run download -R CommunityPokeOrg/vscode-swift-userscripts <run-id>
+on:
+  workflow_dispatch:
+
+jobs:
+  copilot-macos:
+    runs-on: macos-14 # Apple Silicon → aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - name: Build CopilotUserscript (release)
+        run: |
+          swift build -c release --product CopilotUserscript
+          cp .build/release/CopilotUserscript "$RUNNER_TEMP/CopilotUserscript-darwin-arm64"
+        working-directory: examples/copilot
+      - name: Smoke check binary responds to initialize
+        run: echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | "$RUNNER_TEMP/CopilotUserscript-darwin-arm64"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CopilotUserscript-darwin-arm64
+          path: ${{ runner.temp }}/CopilotUserscript-darwin-arm64
+          retention-days: 7
+
+  copilot-linux:
+    runs-on: ubuntu-latest # x86_64 → x86_64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - name: Build CopilotUserscript (release)
+        run: |
+          swift build -c release --product CopilotUserscript
+          cp .build/release/CopilotUserscript "$RUNNER_TEMP/CopilotUserscript-linux-x64"
+        working-directory: examples/copilot
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CopilotUserscript-linux-x64
+          path: ${{ runner.temp }}/CopilotUserscript-linux-x64
+          retention-days: 7
