@@ -3,6 +3,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { initApi } from "./api";
 import { CommandRegistry } from "./commands";
+import { toPickItems } from "./commandPalette";
 import { buildScript, findBundles, findManifests } from "./discovery";
 import { SwiftScriptHost } from "./swiftHost";
 import { loadBundle } from "./vswift";
@@ -84,6 +85,32 @@ async function loadAll(context: vscode.ExtensionContext): Promise<void> {
   } finally {
     loading = false;
   }
+  await vscode.commands.executeCommand(
+    "setContext",
+    "swiftCopilot.loaded",
+    hosts.some((h) => h.name === "copilot-userscript"),
+  );
+}
+
+/** "Swift Userscripts: Run Script Command..." — QuickPick over live dynamic registrations. */
+async function runUserscriptCommand(): Promise<void> {
+  const items = toPickItems(
+    commands.list(),
+    hosts.map((h) => ({ name: h.name, commands: h.contributedCommands })),
+  );
+  if (items.length === 0) {
+    vscode.window.showInformationMessage("No userscript commands are currently loaded.");
+    return;
+  }
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: "Select a userscript command to run",
+  });
+  if (!picked) return;
+  try {
+    await vscode.commands.executeCommand(picked.commandId);
+  } catch (e) {
+    vscode.window.showErrorMessage(`Command failed: ${e}`);
+  }
 }
 
 async function installBundle(context: vscode.ExtensionContext): Promise<void> {
@@ -126,6 +153,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("swiftUserscripts.showLog", () => output.show()),
     vscode.commands.registerCommand("swiftUserscripts.installVswift", () =>
       installBundle(context),
+    ),
+    vscode.commands.registerCommand("swiftUserscripts.runCommand", () =>
+      runUserscriptCommand(),
     ),
   );
 

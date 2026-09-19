@@ -33,8 +33,34 @@
       {
         "command": "swiftUserscripts.installVswift",
         "title": "Swift Userscripts: Install .vswift Bundle"
+      },
+      {
+        "command": "swiftUserscripts.runCommand",
+        "title": "Swift Userscripts: Run Script Command..."
+      },
+      {
+        "command": "swiftCopilot.generate",
+        "title": "Generate Code",
+        "category": "Swift Copilot"
+      },
+      {
+        "command": "swiftCopilot.explain",
+        "title": "Explain Selection",
+        "category": "Swift Copilot"
+      },
+      {
+        "command": "swiftCopilot.refactor",
+        "title": "Refactor Selection",
+        "category": "Swift Copilot"
       }
     ],
+    "menus": {
+      "commandPalette": [
+        { "command": "swiftCopilot.generate", "when": "swiftCopilot.loaded" },
+        { "command": "swiftCopilot.explain", "when": "swiftCopilot.loaded" },
+        { "command": "swiftCopilot.refactor", "when": "swiftCopilot.loaded" }
+      ]
+    },
     "configuration": {
       "title": "Swift Userscripts",
       "properties": {

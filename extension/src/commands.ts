@@ -61,6 +61,15 @@ export class CommandRegistry implements vscode.Disposable {
     return this.byId.has(id);
   }
 
+  /** Snapshot of live registrations (for the Run Script Command palette). */
+  list(): { id: string; owner: string }[] {
+    const out: { id: string; owner: string }[] = [];
+    for (const [owner, ids] of this.byOwner) {
+      for (const id of ids) if (this.byId.has(id)) out.push({ id, owner });
+    }
+    return out;
+  }
+
   dispose(): void {
     for (const id of [...this.byId.keys()]) this.unregisterId(id);
     this.byOwner.clear();
