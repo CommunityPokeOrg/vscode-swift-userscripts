@@ -1,0 +1,60 @@
+{
+  "name": "vscode-swift-userscripts",
+  "displayName": "Swift Userscripts",
+  "description": "Run VS Code extension features written in Swift via a JSON-RPC host bridge.",
+  "version": "0.0.1",
+  "publisher": "communitypoke",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "swiftUserscripts.reload",
+        "title": "Swift Userscripts: Reload Scripts"
+      },
+      {
+        "command": "swiftUserscripts.showLog",
+        "title": "Swift Userscripts: Show Log"
+      }
+    ],
+    "configuration": {
+      "title": "Swift Userscripts",
+      "properties": {
+        "swiftUserscripts.scriptGlob": {
+          "type": "string",
+          "default": "**/userscript.json",
+          "description": "Glob used to discover userscript manifests in the workspace."
+        },
+        "swiftUserscripts.buildConfiguration": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "release"
+          ],
+          "default": "debug",
+          "description": "SwiftPM build configuration used when compiling userscripts."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
