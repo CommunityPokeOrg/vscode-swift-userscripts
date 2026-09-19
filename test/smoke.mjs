@@ -92,6 +92,9 @@ const apiCaps = {
     "vscode/window.showInputBox",
     "vscode/window.showQuickPick",
     "vscode/window.activeTextEditor",
+    "vscode/window.showUntitledDocument",
+    "vscode/editor.insertOrReplaceSelection",
+    "vscode/editor.documentText",
     "vscode/env.clipboardReadText",
     "vscode/env.clipboardWriteText",
   ],
@@ -130,5 +133,41 @@ const exited = new Promise((r) => proc.on("exit", r));
 proc.stdin.end();
 const code = await exited;
 assert(code === 0, `process exits cleanly on stdin close (code=${code})`);
+
+// Optional second binary (e.g. examples/copilot): manifest-only handshake check.
+const bin2 = process.argv[3];
+if (bin2) {
+  const m = await manifestOf(bin2);
+  assert(
+    Array.isArray(m?.contributes?.commands) && m.contributes.commands.length >= 3,
+    `${bin2} declares >=3 commands (${m?.contributes?.commands?.length})`,
+  );
+}
+
+function manifestOf(binary) {
+  return new Promise((resolve, reject) => {
+    const p = spawn(binary, ["--stdio"], { stdio: ["pipe", "pipe", "inherit"] });
+    let buf = "";
+    p.stdout.setEncoding("utf8");
+    p.stdout.on("data", (c) => {
+      buf += c;
+      const i = buf.indexOf("\n");
+      if (i >= 0) {
+        const msg = JSON.parse(buf.slice(0, i));
+        p.stdin.end();
+        resolve(msg.result);
+      }
+    });
+    p.on("error", reject);
+    p.stdin.write(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { pid: 0, workspaceFolders: [], capabilities: apiCaps },
+      }) + "\n",
+    );
+  });
+}
 
 console.log("smoke: all checks passed");
