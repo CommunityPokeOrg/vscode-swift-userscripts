@@ -58,12 +58,35 @@ export const apiHandlers: Record<string, ApiHandler> = {
     };
   },
   "vscode/workspace.openTextDocument": async (p) => {
-    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(String(p?.uri)));
+    const doc = p?.content !== undefined
+      ? await vscode.workspace.openTextDocument({
+          content: String(p.content),
+          language: p?.language ?? "markdown",
+        })
+      : await vscode.workspace.openTextDocument(vscode.Uri.parse(String(p?.uri)));
     return { uri: doc.uri.toString(), languageId: doc.languageId, text: doc.getText() };
+  },
+  "vscode/editor.insertOrReplaceSelection": async (p) => {
+    const e = vscode.window.activeTextEditor;
+    if (!e) throw new Error("no active text editor");
+    const text = typeof p?.text === "string" ? p.text : "";
+    const applied = await e.edit((b) => b.replace(e.selection, text));
+    return { ok: applied };
+  },
+  "vscode/editor.documentText": () => {
+    return vscode.window.activeTextEditor?.document.getText() ?? null;
   },
   "vscode/window.showTextDocument": async (p) => {
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(String(p?.uri)));
     await vscode.window.showTextDocument(doc);
+    return { uri: doc.uri.toString() };
+  },
+  "vscode/window.showUntitledDocument": async (p) => {
+    const doc = await vscode.workspace.openTextDocument({
+      content: String(p?.content ?? ""),
+      language: p?.language ?? "markdown",
+    });
+    await vscode.window.showTextDocument(doc, { preview: false });
     return { uri: doc.uri.toString() };
   },
   "vscode/env.clipboardReadText": async () => {

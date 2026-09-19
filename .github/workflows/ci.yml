@@ -18,6 +18,9 @@ jobs:
       - name: Build example userscript
         run: swift build
         working-directory: examples/hello
+      - name: Test copilot example
+        run: swift test
+        working-directory: examples/copilot
 
   extension:
     runs-on: ubuntu-latest
@@ -49,8 +52,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Build userscript
-        run: swift build
-        working-directory: examples/hello
+      - name: Build userscripts
+        run: |
+          swift build --package-path examples/hello
+          swift build --package-path examples/copilot
       - name: Protocol smoke test
-        run: node test/smoke.mjs
+        run: node test/smoke.mjs examples/hello/.build/debug/HelloUserscript examples/copilot/.build/debug/CopilotUserscript

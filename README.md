@@ -33,7 +33,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full options analysis.
 | --- | --- |
 | `extension/` | The VS Code host extension (TypeScript) |
 | `swift-userscript/` | `SwiftUserscript` — SwiftPM library scripts import |
-| `examples/hello/` | Example userscript (SwiftPM executable + `userscript.json`) |
+| `examples/hello/` | Minimal example userscript (SwiftPM executable + `userscript.json`) |
+| `examples/copilot/` | Copilot-style AI commands (Generate/Explain/Refactor) over a configurable OpenAI-compatible endpoint |
 | `docs/` | Architecture & protocol docs |
 | `test/smoke.mjs` | End-to-end protocol test without VS Code |
 

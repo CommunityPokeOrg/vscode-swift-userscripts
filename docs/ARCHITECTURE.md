@@ -83,8 +83,11 @@ Methods implemented in `extension/src/api.ts` and mirrored in
 | `vscode/window.showInputBox` | `vscode.window.showInputBox(prompt:)` |
 | `vscode/window.showQuickPick` | `vscode.window.showQuickPick(_:)` |
 | `vscode/window.activeTextEditor` | `vscode.window.activeTextEditor()` |
-| `vscode/workspace.openTextDocument` | — |
+| `vscode/workspace.openTextDocument` (uri or `{content, language}`) | — |
 | `vscode/window.showTextDocument` | — |
+| `vscode/window.showUntitledDocument` | `vscode.window.showUntitledDocument(content:)` |
+| `vscode/editor.insertOrReplaceSelection` | `vscode.editor.insertOrReplaceSelection(_:)` |
+| `vscode/editor.documentText` | `vscode.editor.documentText()` |
 | `vscode/env.clipboardReadText` | `vscode.env.clipboardReadText()` |
 | `vscode/env.clipboardWriteText` | `vscode.env.clipboardWriteText(_:)` |
 | `vscode/statusBar.setText` | — |

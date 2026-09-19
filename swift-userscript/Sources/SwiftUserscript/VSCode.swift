@@ -61,10 +61,12 @@ public final class VSCode: Sendable {
 
     public let window: Window
     public let env: Env
+    public let editor: Editor
 
     public init() {
         self.window = Window(peer: peer)
         self.env = Env(peer: peer)
+        self.editor = Editor(peer: peer)
     }
 
     public struct Window: Sendable {
@@ -72,6 +74,10 @@ public final class VSCode: Sendable {
     }
 
     public struct Env: Sendable {
+        fileprivate let peer: JSONRPCPeer
+    }
+
+    public struct Editor: Sendable {
         fileprivate let peer: JSONRPCPeer
     }
 
@@ -151,6 +157,32 @@ extension VSCode.Window {
         let r = try await peer.request("vscode/window.activeTextEditor")
         if r == .null { return nil }
         return try r.decoding(ActiveTextEditor.self)
+    }
+
+    /// Open an untitled document (e.g. for generated explanations/output) and
+    /// show it in a non-preview tab.
+    @discardableResult
+    public func showUntitledDocument(content: String, language: String = "markdown")
+        async throws -> String
+    {
+        let r = try await peer.request(
+            "vscode/window.showUntitledDocument",
+            params: ["content": .string(content), "language": .string(language)])
+        return r["uri"]?.stringValue ?? ""
+    }
+}
+
+extension VSCode.Editor {
+    /// Insert `text` at the cursor, replacing the current selection if any.
+    public func insertOrReplaceSelection(_ text: String) async throws {
+        _ = try await peer.request(
+            "vscode/editor.insertOrReplaceSelection",
+            params: ["text": .string(text)])
+    }
+
+    /// Full text of the active editor's document, or nil when no editor.
+    public func documentText() async throws -> String? {
+        try await peer.request("vscode/editor.documentText").stringValue
     }
 }
 
