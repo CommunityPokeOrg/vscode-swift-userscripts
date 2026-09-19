@@ -5,6 +5,11 @@
   "version": "0.0.1",
   "publisher": "communitypoke",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CommunityPokeOrg/vscode-swift-userscripts.git",
+    "directory": "extension"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -47,6 +52,7 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
@@ -55,6 +61,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^5.4.0"
   }
 }
